@@ -2,8 +2,7 @@ package org.prasanth.swgoh.dao;
 
 import java.util.List;
 
-import org.prasanth.swgoh.User;
-import org.springframework.transaction.annotation.Transactional;
+import org.prasanth.swgoh.dto.User;
 
 /**
  * Created by prasanthmathialagan on 9/10/17.

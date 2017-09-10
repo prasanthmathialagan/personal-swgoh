@@ -21,7 +21,8 @@ http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
 
         <property name="annotatedClasses">
             <list>
-                <value>org.prasanth.swgoh.User</value>
+                <value>org.prasanth.swgoh.dto.User</value>
+                <value>org.prasanth.swgoh.dto.Toon</value>
             </list>
         </property>
 

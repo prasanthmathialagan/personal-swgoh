@@ -17,4 +17,5 @@ http://www.springframework.org/schema/context/spring-context-2.5.xsd">
 
     <bean name="controller" class="org.prasanth.swgoh.Controller"/>
     <bean name="daoUsers" class="org.prasanth.swgoh.dao.DAOUsers"/>
+    <bean name="daoToons" class="org.prasanth.swgoh.dao.DAOToons"/>
 </beans>

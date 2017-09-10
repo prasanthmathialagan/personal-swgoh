@@ -1,6 +1,5 @@
-package org.prasanth.swgoh;
+package org.prasanth.swgoh.dto;
 
-import java.sql.Date;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -21,8 +20,6 @@ public class User {
 	private String userId;
 
 	private String name;
-
-	private Date lastUpdated;
 
 	public Long getId() {
 		return id;
@@ -46,14 +43,6 @@ public class User {
 
 	public void setName(String name) {
 		this.name = name;
-	}
-
-	public Date getLastUpdated() {
-		return lastUpdated;
-	}
-
-	public void setLastUpdated(Date lastUpdated) {
-		this.lastUpdated = lastUpdated;
 	}
 
 	@Override
