@@ -23,6 +23,7 @@ http://www.springframework.org/schema/beans/spring-beans-2.5.xsd">
             <list>
                 <value>org.prasanth.swgoh.dto.User</value>
                 <value>org.prasanth.swgoh.dto.Toon</value>
+                <value>org.prasanth.swgoh.dto.GuildToon</value>
             </list>
         </property>
 

@@ -11,13 +11,18 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Table;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.log4j.Logger;
+import org.prasanth.swgoh.dao.DAOGuildToons;
 import org.prasanth.swgoh.dao.DAOToons;
 import org.prasanth.swgoh.dao.DAOUsers;
+import org.prasanth.swgoh.dto.GuildToon;
+import org.prasanth.swgoh.dto.GuildToon.GuildToonData;
 import org.prasanth.swgoh.dto.Toon;
 import org.prasanth.swgoh.dto.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,12 +38,16 @@ public class Controller {
 
 	public static final String GUILD_MEMBERS_FILE = "guildmembers";
 	public static final String ALL_TOONS_FILE = "alltoons";
+	public static final String GUILD_TOONS_FILE = "guildtoons";
 
 	@Autowired
 	private DAOUsers daoUsers;
 
 	@Autowired
 	private DAOToons daoToons;
+
+	@Autowired
+	private DAOGuildToons daoGuildToons;
 
 	@Value("${dataDir}")
 	private String dataDir;
@@ -88,7 +97,7 @@ public class Controller {
 		});
 
 		daoUsers.saveUsers(newUsers);
-		daoUsers.deleteUsers(deletedUsers);
+		daoUsers.deleteUsers(deletedUsers); // TODO: Delete the data from GuildToons
 		daoUsers.updateUsers(updatedUsers);
 
 		LOGGER.info("Users reconciliation summary: New=" + newUsers.size() + ", Deleted=" + deletedUsers.size() + ", Updated=" + updatedUsers.size());
@@ -137,5 +146,93 @@ public class Controller {
 			toons.add(toon);
 		}
 		return toons;
+	}
+
+
+	@Transactional
+	public void reconcileGuildToons() throws Exception {
+		Table<Long, Long, GuildToonData> guildToonsFromCSV = parseGuildToons();
+
+		List<GuildToon> allGuildToons = daoGuildToons.getAllGuildToons();
+		Table<Long, Long, GuildToonData> guildToonsFromDB = convertToTable(allGuildToons); // Max = 120*50 = 6000 entries
+
+		// Updated and deleted
+		List<GuildToon> updatedGuildToons = new ArrayList<>();
+		List<GuildToon> deletedGuildToons = new ArrayList<>();
+
+		allGuildToons.forEach((guildToon -> {
+			GuildToonData newGuildToonData = guildToonsFromCSV.get(guildToon.getUserId(), guildToon.getToonId());
+			if (newGuildToonData == null) {
+				deletedGuildToons.add(guildToon);
+			} else {
+				GuildToonData oldGuildToonData = guildToon.getGuildToonData();
+
+				boolean updated = false;
+				if (newGuildToonData.getStar() != oldGuildToonData.getStar()) {
+					updated = true;
+					oldGuildToonData.setStar(newGuildToonData.getStar());
+				}
+
+				if (newGuildToonData.getGalacticPower() != oldGuildToonData.getGalacticPower()) {
+					updated = true;
+					oldGuildToonData.setGalacticPower(newGuildToonData.getGalacticPower());
+				}
+
+				if (updated) {
+					updatedGuildToons.add(guildToon);
+				}
+			}
+		}));
+
+		// Newly added
+		List<GuildToon> addedGuildToons = new ArrayList<>();
+		guildToonsFromCSV.cellSet().forEach((cell) -> {
+			// Row key = userid, column key = toonId
+			if (guildToonsFromDB.get(cell.getRowKey(), cell.getColumnKey()) == null) {
+				GuildToon newToon = new GuildToon();
+				newToon.setUserId(cell.getRowKey());
+				newToon.setToonId(cell.getColumnKey());
+				newToon.setGuildToonData(cell.getValue());
+				addedGuildToons.add(newToon);
+			}
+		});
+
+		daoGuildToons.save(addedGuildToons);
+		daoGuildToons.update(updatedGuildToons);
+		daoGuildToons.delete(deletedGuildToons);
+
+		LOGGER.info("Guild Toons reconciliation summary: Added=" + addedGuildToons.size() + ", Deleted=" + deletedGuildToons.size() + ", Updated=" + updatedGuildToons.size());
+	}
+
+	private Table<Long, Long, GuildToonData> convertToTable(List<GuildToon> allGuildToons) {
+		Table<Long, Long, GuildToonData> guildToons = HashBasedTable.create();
+		allGuildToons.forEach((guildToon) -> guildToons.put(guildToon.getUserId(), guildToon.getToonId(), guildToon.getGuildToonData()));
+		return guildToons;
+	}
+
+	private Table<Long, Long, GuildToonData> parseGuildToons() throws IOException {
+		File file = new File(dataDir + File.separatorChar + GUILD_TOONS_FILE);
+		CSVParser parser = CSVParser.parse(file, Charset.defaultCharset(), CSVFormat.DEFAULT);
+		Table<Long, Long, GuildToonData> guildToons = HashBasedTable.create();
+		for ( CSVRecord record: parser) {
+			String username = record.get(0).trim().toLowerCase(); // In some places username is mixed case. In database, it is saved with lowercase.
+			long userId = daoUsers.getFromCache(username).getId();
+
+			int size = record.size();
+			for (int i = 1; i < size; i += 3) {
+				String toon = record.get(i).trim();
+				long toonId = daoToons.getFromCache(toon).getId();
+
+				int star = Integer.parseInt(record.get(i + 1).trim());
+				long gp = Long.parseLong(record.get(i + 2).trim());
+
+				GuildToonData toonData = new GuildToonData();
+				toonData.setStar(star);
+				toonData.setGalacticPower(gp);
+
+				guildToons.put(userId, toonId, toonData);
+			}
+		}
+		return guildToons;
 	}
 }

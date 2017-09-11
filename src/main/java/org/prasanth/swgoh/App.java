@@ -15,5 +15,6 @@ public class App {
 		Controller controller = (Controller) appContext.getBean("controller");
 		controller.reconcileUsers();
 		controller.reconcileAllToons();
+		controller.reconcileGuildToons();
 	}
 }
