@@ -72,6 +72,7 @@ public class Controller {
 		csvMap.forEach((userId, user) -> {
 			if (!dbMap.containsKey(userId)) {
 				newUsers.add(user);
+				LOGGER.info("New user = " + user);
 			}
 		});
 
@@ -92,6 +93,7 @@ public class Controller {
 				if (!Objects.equals(newUser.getName(), oldUser.getName())) {
 					oldUser.setName(newUser.getName());
 					updatedUsers.add(oldUser);
+					LOGGER.info("Updated user = " + newUser);
 				}
 			}
 		});
@@ -109,7 +111,7 @@ public class Controller {
 		List<User> users = new ArrayList<>();
 		for ( CSVRecord record: parser) {
 			User user = new User();
-			user.setUserId(record.get(0).trim());
+			user.setUserId(record.get(0).trim().replace("%20", " ")); // TODO : Find a clean way to handle the spaces in the username
 			user.setName(record.get(1).trim());
 			users.add(user);
 		}
@@ -128,6 +130,7 @@ public class Controller {
 		toonsFromCSV.forEach((toon -> {
 			if (!allToonsFromDB.contains(toon.getName())) {
 				newToons.add(toon);
+				LOGGER.info("New toon = " + toon);
 			}
 		}));
 
@@ -170,11 +173,19 @@ public class Controller {
 				boolean updated = false;
 				if (newGuildToonData.getStar() != oldGuildToonData.getStar()) {
 					updated = true;
+					LOGGER.info(
+							daoUsers.getFromCache(guildToon.getUserId()).getName() +
+									" increased star of " + daoToons.getFromCache(guildToon.getToonId()).getName() +
+									" from " + oldGuildToonData.getStar() + " to " + newGuildToonData.getStar());
 					oldGuildToonData.setStar(newGuildToonData.getStar());
 				}
 
 				if (newGuildToonData.getGalacticPower() != oldGuildToonData.getGalacticPower()) {
 					updated = true;
+					LOGGER.info(
+							daoUsers.getFromCache(guildToon.getUserId()).getName() +
+									" increased Galactic Power of " + daoToons.getFromCache(guildToon.getToonId()).getName() +
+									" from " + oldGuildToonData.getGalacticPower() + " to " + newGuildToonData.getGalacticPower());
 					oldGuildToonData.setGalacticPower(newGuildToonData.getGalacticPower());
 				}
 
@@ -193,6 +204,13 @@ public class Controller {
 				newToon.setUserId(cell.getRowKey());
 				newToon.setToonId(cell.getColumnKey());
 				newToon.setGuildToonData(cell.getValue());
+
+				LOGGER.info(
+						daoUsers.getFromCache(newToon.getUserId()).getName() +
+								" has activated new toon " + daoToons.getFromCache(newToon.getToonId()).getName() +
+								" with star=" + newToon.getGuildToonData().getStar() + " and Galactic Power="
+								+ newToon.getGuildToonData().getGalacticPower());
+
 				addedGuildToons.add(newToon);
 			}
 		});

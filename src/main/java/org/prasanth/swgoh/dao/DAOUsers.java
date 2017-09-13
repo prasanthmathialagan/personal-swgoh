@@ -20,8 +20,20 @@ public class DAOUsers extends BaseDAO{
 				}
 			});
 
+	private final LoadingCache<Long, User> idToUserCache = CacheBuilder.newBuilder()
+			.build(new CacheLoader<Long, User>() {
+				@Override
+				public User load(Long id) throws Exception {
+					return getHibernateTemplate().get(User.class, id);
+				}
+			});
+
 	public User getFromCache(String name) {
 		return usernameToUserCache.getUnchecked(name);
+	}
+
+	public User getFromCache(long id) {
+		return idToUserCache.getUnchecked(id);
 	}
 
 	public List<User> getAllUsers() {
@@ -43,5 +55,6 @@ public class DAOUsers extends BaseDAO{
 	public void deleteUsers(List<User> users) {
 		getHibernateTemplate().deleteAll(users);
 		usernameToUserCache.invalidateAll();
+		idToUserCache.invalidateAll();
 	}
 }

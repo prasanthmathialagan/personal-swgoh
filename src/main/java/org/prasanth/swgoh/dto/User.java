@@ -63,4 +63,12 @@ public class User {
 	public int hashCode() {
 		return userId != null ? userId.hashCode() : 0;
 	}
+
+	@Override
+	public String toString() {
+		return "User{" +
+				"userId='" + userId + '\'' +
+				", name='" + name + '\'' +
+				'}';
+	}
 }

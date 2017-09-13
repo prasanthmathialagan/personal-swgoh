@@ -20,6 +20,14 @@ public class DAOToons extends BaseDAO {
 				}
 			});
 
+	private final LoadingCache<Long, Toon> idToToonCache = CacheBuilder.newBuilder()
+			.build(new CacheLoader<Long, Toon>() {
+				@Override
+				public Toon load(Long id) throws Exception {
+					return getHibernateTemplate().get(Toon.class, id);
+				}
+			});
+
 	public List<Toon> getAllToons() {
 		return (List<Toon>) getHibernateTemplate().find("From Toon");
 	}
@@ -28,10 +36,15 @@ public class DAOToons extends BaseDAO {
 		return nameToToonCache.getUnchecked(name);
 	}
 
+	public Toon getFromCache(long id) {
+		return idToToonCache.getUnchecked(id);
+	}
+
 	public void saveToons(List<Toon> toons) {
 		for ( Toon toon : toons ) {
 			getHibernateTemplate().save(toon);
 		}
 		nameToToonCache.invalidateAll();
+		idToToonCache.invalidateAll();
 	}
 }
