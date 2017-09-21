@@ -3,7 +3,6 @@ package org.prasanth.swgoh;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -15,9 +14,6 @@ import java.util.stream.Collectors;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
 import org.apache.log4j.Logger;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -193,9 +189,18 @@ public class Controller {
 					updated = true;
 					LOGGER.info(
 							daoUsers.getFromCache(guildToon.getUserId()).getName() +
-									" increased Galactic Power of " + daoToons.getFromCache(guildToon.getToonId()).getName() +
+									" changed Galactic Power of " + daoToons.getFromCache(guildToon.getToonId()).getName() +
 									" from " + oldGuildToonData.getGalacticPower() + " to " + newGuildToonData.getGalacticPower());
 					oldGuildToonData.setGalacticPower(newGuildToonData.getGalacticPower());
+				}
+
+				if (newGuildToonData.getSpeed() != -1 && newGuildToonData.getSpeed() != oldGuildToonData.getSpeed()) {
+					updated = true;
+					LOGGER.info(
+							daoUsers.getFromCache(guildToon.getUserId()).getName() +
+									" changed speed of " + daoToons.getFromCache(guildToon.getToonId()).getName() +
+									" from " + oldGuildToonData.getSpeed() + " to " + newGuildToonData.getSpeed());
+					oldGuildToonData.setSpeed(newGuildToonData.getSpeed());
 				}
 
 				if (updated) {
@@ -254,10 +259,12 @@ public class Controller {
 
 				int star = ((Long) toonObj.get("star")).intValue();
 				long gp = (long) toonObj.get("galacticPower");
+				int speed = ((Long) toonObj.getOrDefault("speed", -1L)).intValue();
 
 				GuildToonData toonData = new GuildToonData();
 				toonData.setStar(star);
 				toonData.setGalacticPower(gp);
+				toonData.setSpeed(speed);
 
 				guildToons.put(userId, toonId, toonData);
 			}

@@ -1,5 +1,16 @@
 import users, collection
 import json
+import os, shutil
+
+print "Removing old data..."
+folder = 'data'
+for the_file in os.listdir(folder):
+    file_path = os.path.join(folder, the_file)
+    try:
+        if os.path.isfile(file_path):
+            os.unlink(file_path)
+    except Exception as e:
+        print(e)
 
 # locations
 toons_output = "data/alltoons.json"
@@ -20,7 +31,7 @@ with open(toons_output, 'w+') as outfile:
 guild_leader = users.parseUser("prasanthswgoh")
 guild_url = guild_leader['guildurl']
 
-print "Collecting members of the guild.."
+print "Collecting members of the guild..."
 guild_members = users.getGuildUsers(guild_url)
 with open(guild_members_output, 'w+') as outfile:
     json.dump(guild_members, outfile)
@@ -28,7 +39,7 @@ with open(guild_members_output, 'w+') as outfile:
 # -----------------------------------------------------------------------
 
 # Get the toons of all the guild members
-print "Collecting toons from the guild.."
+print "Collecting toons from the guild..."
 
 guild_toons = []
 for member in guild_members:

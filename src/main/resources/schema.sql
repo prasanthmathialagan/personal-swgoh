@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS `GuildToons` (
   `toonId` bigint NOT NULL,
   `star` smallint NOT NULL DEFAULT 0,
   `galacticPower` bigint NOT NULL DEFAULT 0,
+  `speed` smallint NOT NULL DEFAULT 0,
   `lastUpdated` timestamp,
   PRIMARY KEY (`id`),
   UNIQUE (`userId`, `toonId`)

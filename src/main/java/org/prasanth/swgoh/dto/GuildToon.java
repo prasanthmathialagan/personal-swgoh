@@ -65,6 +65,8 @@ public class GuildToon {
 
 		private long galacticPower;
 
+		private int speed;
+
 		public long getGalacticPower() {
 			return galacticPower;
 		}
@@ -79,6 +81,14 @@ public class GuildToon {
 
 		public void setStar(int star) {
 			this.star = star;
+		}
+
+		public int getSpeed() {
+			return speed;
+		}
+
+		public void setSpeed(int speed) {
+			this.speed = speed;
 		}
 	}
 
