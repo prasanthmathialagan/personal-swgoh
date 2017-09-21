@@ -1,6 +1,7 @@
 package org.prasanth.swgoh;
 
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
@@ -18,6 +19,10 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.log4j.Logger;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 import org.prasanth.swgoh.dao.DAOGuildToons;
 import org.prasanth.swgoh.dao.DAOToons;
 import org.prasanth.swgoh.dao.DAOUsers;
@@ -36,9 +41,9 @@ public class Controller {
 
 	private static final Logger LOGGER = Logger.getLogger(Controller.class);
 
-	public static final String GUILD_MEMBERS_FILE = "guildmembers";
-	public static final String ALL_TOONS_FILE = "alltoons";
-	public static final String GUILD_TOONS_FILE = "guildtoons";
+	public static final String GUILD_MEMBERS_FILE = "guildmembers.json";
+	public static final String ALL_TOONS_FILE = "alltoons.json";
+	public static final String GUILD_TOONS_FILE = "guildtoons.json";
 
 	@Autowired
 	private DAOUsers daoUsers;
@@ -59,17 +64,17 @@ public class Controller {
 	@Transactional
 	public void reconcileUsers() throws Exception {
 		List<User> usersFromDB = daoUsers.getAllUsers();
-		List<User> usersFromCSV = parseUsers();
+		List<User> usersFromJson = parseUsers();
 
 		Map<String, User> dbMap = usersFromDB.stream().collect(Collectors.toMap(User::getUserId, user -> user));
-		Map<String, User> csvMap = usersFromCSV.stream().collect(Collectors.toMap(User::getUserId, user -> user));
+		Map<String, User> jsonMap = usersFromJson.stream().collect(Collectors.toMap(User::getUserId, user -> user));
 
 		List<User> newUsers = new ArrayList<>();
 		List<User> deletedUsers = new ArrayList<>();
 		List<User> updatedUsers = new ArrayList<>();
 
 		// NewUsers
-		csvMap.forEach((userId, user) -> {
+		jsonMap.forEach((userId, user) -> {
 			if (!dbMap.containsKey(userId)) {
 				newUsers.add(user);
 				LOGGER.info("New user = " + user);
@@ -78,15 +83,15 @@ public class Controller {
 
 		// DeletedUsers
 		dbMap.forEach((userId, user) -> {
-			if (!csvMap.containsKey(userId)) {
+			if (!jsonMap.containsKey(userId)) {
 				deletedUsers.add(user);
 			}
 		});
 
 		// UpdatedUsers
 		dbMap.forEach((userId, oldUser) -> {
-			if (csvMap.containsKey(userId)) {
-				User newUser = csvMap.get(userId);
+			if (jsonMap.containsKey(userId)) {
+				User newUser = jsonMap.get(userId);
 
 				// Check for the equality of names
 				// TODO Move to an interface based reconciliation
@@ -105,14 +110,16 @@ public class Controller {
 		LOGGER.info("Users reconciliation summary: New=" + newUsers.size() + ", Deleted=" + deletedUsers.size() + ", Updated=" + updatedUsers.size());
 	}
 
-	private List<User> parseUsers() throws IOException {
+	private List<User> parseUsers() throws IOException, ParseException {
 		File file = new File(dataDir + File.separatorChar + GUILD_MEMBERS_FILE);
-		CSVParser parser = CSVParser.parse(file, Charset.defaultCharset(), CSVFormat.DEFAULT);
+		JSONParser parser = new JSONParser();
+		JSONArray jsonArray = (JSONArray) parser.parse(new FileReader(file));
 		List<User> users = new ArrayList<>();
-		for ( CSVRecord record: parser) {
+		for (Object record: jsonArray) {
+			JSONObject jsonObject = (JSONObject) record;
 			User user = new User();
-			user.setUserId(record.get(0).trim().replace("%20", " ")); // TODO : Find a clean way to handle the spaces in the username
-			user.setName(record.get(1).trim());
+			user.setUserId(((String)jsonObject.get("username")).replace("%20", " ")); // TODO : Find a clean way to handle the spaces in the username
+			user.setName((String) jsonObject.get("name"));
 			users.add(user);
 		}
 		return users;
@@ -139,13 +146,15 @@ public class Controller {
 		LOGGER.info("Toons reconciliation summary: New=" + newToons.size());
 	}
 
-	private List<Toon> parseToons() throws IOException {
+	private List<Toon> parseToons() throws IOException, ParseException {
 		File file = new File(dataDir + File.separatorChar + ALL_TOONS_FILE);
-		CSVParser parser = CSVParser.parse(file, Charset.defaultCharset(), CSVFormat.DEFAULT);
+		JSONParser parser = new JSONParser();
+		JSONArray jsonArray = (JSONArray) parser.parse(new FileReader(file));
 		List<Toon> toons = new ArrayList<>();
-		for ( CSVRecord record: parser) {
+		for (Object record: jsonArray) {
+			JSONObject jsonObject = (JSONObject) record;
 			Toon toon = new Toon();
-			toon.setName(record.get(0).trim());
+			toon.setName((String) jsonObject.get("name"));
 			toons.add(toon);
 		}
 		return toons;
@@ -228,21 +237,23 @@ public class Controller {
 		return guildToons;
 	}
 
-	private Table<Long, Long, GuildToonData> parseGuildToons() throws IOException {
+	private Table<Long, Long, GuildToonData> parseGuildToons() throws IOException, ParseException {
 		File file = new File(dataDir + File.separatorChar + GUILD_TOONS_FILE);
-		CSVParser parser = CSVParser.parse(file, Charset.defaultCharset(), CSVFormat.DEFAULT);
+		JSONParser parser = new JSONParser();
+		JSONArray jsonArray = (JSONArray) parser.parse(new FileReader(file));
 		Table<Long, Long, GuildToonData> guildToons = HashBasedTable.create();
-		for ( CSVRecord record: parser) {
-			String username = record.get(0).trim().toLowerCase(); // In some places username is mixed case. In database, it is saved with lowercase.
+		for (Object record: jsonArray) {
+			JSONObject jsonObject = (JSONObject) record;
+			String username = ((String)jsonObject.get("username")).replace("%20", " "); // TODO : Find a clean way to handle the spaces in the username
 			long userId = daoUsers.getFromCache(username).getId();
-
-			int size = record.size();
-			for (int i = 1; i < size; i += 3) {
-				String toon = record.get(i).trim();
+			JSONArray toons = (JSONArray) jsonObject.get("toons");
+			for (Object o : toons) {
+				JSONObject toonObj = (JSONObject) o;
+				String toon = (String) toonObj.get("name");
 				long toonId = daoToons.getFromCache(toon).getId();
 
-				int star = Integer.parseInt(record.get(i + 1).trim());
-				long gp = Long.parseLong(record.get(i + 2).trim());
+				int star = ((Long) toonObj.get("star")).intValue();
+				long gp = (long) toonObj.get("galacticPower");
 
 				GuildToonData toonData = new GuildToonData();
 				toonData.setStar(star);

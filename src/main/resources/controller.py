@@ -30,12 +30,12 @@ with open(guild_members_output, 'w+') as outfile:
 # Get the toons of all the guild members
 print "Collecting toons from the guild.."
 
-guild_toons = {}
+guild_toons = []
 for member in guild_members:
     username = member['username']
     print("Fetching data for " + username)
     gt = collection.toons(username, False)
-    guild_toons[username] = gt
+    guild_toons.append({"username":username, "toons":gt})
 
 with open(guild_toons_output, 'w+') as outfile:
     json.dump(guild_toons, outfile)
