@@ -32,8 +32,8 @@ def toons(username, lite=True):
             toon_obj['galacticPower'] = int(heavytoon['title'].replace("Power","").split("/")[0].strip().replace(",",""))
 
             # Speed - Expensive to compute. So, don't fetch these often
-            if compute_speed and toon_obj['galacticPower'] > 12000:
-                print ("Collecting speed data for " + code)
+            if compute_speed: # and toon_obj['galacticPower'] > 12000:
+                print ("--------> Collecting speed data for " + code)
                 toonInfoUrl = url + "/" + code
                 r2 = requests.get(toonInfoUrl)
                 html_doc2 = r2.text
@@ -45,7 +45,7 @@ def toons(username, lite=True):
                     if label == "Speed":
                         toon_obj['speed'] = int(stat.find("span", class_="pc-stat-value").text)
 
-                print ("Sleeping for 2 seconds to cool down...")
+                # print ("Sleeping for 2 seconds to cool down...")
                 time.sleep(2)
             else:
                 toon_obj['speed'] = -1 #invalid

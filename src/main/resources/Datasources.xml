@@ -13,13 +13,52 @@
         </property>
     </bean>
 
-    <bean id="dataSource"
-          class="org.springframework.jdbc.datasource.DriverManagerDataSource">
-        <property name="driverClassName" value="${jdbc.driverClassName}"/>
-        <property name="url" value="${jdbc.url}"/>
-        <property name="username" value="${jdbc.username}"/>
-        <property name="password" value="${jdbc.password}"/>
+    <!-- Hikari CP -->
+    <bean id="hikariConfig" class="com.zaxxer.hikari.HikariConfig">
+        <property name="poolName" value="springHikariCP" />
+        <property name="connectionTestQuery" value="SELECT 1" />
+        <property name="dataSourceClassName" value="com.mysql.jdbc.jdbc2.optional.MysqlDataSource" />
+        <property name="dataSourceProperties">
+            <props>
+                <prop key="url">${jdbc.url}</prop>
+                <prop key="user">${jdbc.username}</prop>
+                <prop key="password">${jdbc.password}</prop>
+            </props>
+        </property>
     </bean>
+
+    <bean id="basedataSource" class="com.zaxxer.hikari.HikariDataSource" destroy-method="close">
+        <constructor-arg ref="hikariConfig" />
+    </bean>
+
+    <bean id="dataSource" class="net.ttddyy.dsproxy.support.ProxyDataSource">
+        <property name="dataSource" ref="basedataSource"/>
+        <property name="listener" ref="listener"/>
+    </bean>
+
+    <!--<bean id="listener" class="net.ttddyy.dsproxy.listener.logging.CommonsQueryLoggingListener">-->
+        <!--<property name="logLevel" value="INFO"/>       &lt;!&ndash; Default: DEBUG &ndash;&gt;-->
+    <!--</bean>-->
+
+    <!-- For multiple listeners -->
+    <bean id="listener" class="net.ttddyy.dsproxy.listener.ChainListener">
+      <property name="listeners">
+        <list>
+          <!--<bean class="net.ttddyy.dsproxy.listener.logging.CommonsQueryLoggingListener"/>-->
+          <!--<bean class="net.ttddyy.dsproxy.listener.logging.SLF4JQueryLoggingListener"/>-->
+          <!--<bean class="net.ttddyy.dsproxy.listener.logging.SystemOutQueryLoggingListener"/>-->
+          <!--<bean class="net.ttddyy.dsproxy.listener.DataSourceQueryCountListener"/>-->
+        </list>
+      </property>
+    </bean>
+
+    <!--<bean id="basedataSource"-->
+          <!--class="org.springframework.jdbc.datasource.DriverManagerDataSource">-->
+        <!--<property name="driverClassName" value="${jdbc.driverClassName}"/>-->
+        <!--<property name="url" value="${jdbc.url}"/>-->
+        <!--<property name="username" value="${jdbc.username}"/>-->
+        <!--<property name="password" value="${jdbc.password}"/>-->
+    <!--</bean>-->
 
     <bean id="txManager" class="org.springframework.orm.hibernate4.HibernateTransactionManager">
         <property name="sessionFactory" ref="sessionFactory"/>
