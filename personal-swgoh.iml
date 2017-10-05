@@ -46,5 +46,10 @@
     <orderEntry type="library" name="Maven: com.googlecode.json-simple:json-simple:1.1.1" level="project" />
     <orderEntry type="library" name="Maven: net.ttddyy:datasource-proxy:1.4.3" level="project" />
     <orderEntry type="library" name="Maven: com.zaxxer:HikariCP:2.6.1" level="project" />
+    <orderEntry type="library" name="Maven: com.vladmihalcea.flexy-pool:flexy-hikaricp:1.2.9" level="project" />
+    <orderEntry type="library" name="Maven: com.vladmihalcea.flexy-pool:flexy-pool-core:1.2.9" level="project" />
+    <orderEntry type="library" name="Maven: com.vladmihalcea.flexy-pool:flexy-codahale-metrics:1.2.9" level="project" />
+    <orderEntry type="library" name="Maven: com.vladmihalcea.flexy-pool:flexy-dropwizard-metrics:1.2.9" level="project" />
+    <orderEntry type="library" name="Maven: io.dropwizard.metrics:metrics-core:3.1.0" level="project" />
   </component>
 </module>

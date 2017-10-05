@@ -25,11 +25,38 @@
                 <prop key="password">${jdbc.password}</prop>
             </props>
         </property>
+        <property name="minimumIdle" value="1"/>
+        <property name="maximumPoolSize" value="3"/>
+        <property name="connectionTimeout" value="1000"/>
     </bean>
 
-    <bean id="basedataSource" class="com.zaxxer.hikari.HikariDataSource" destroy-method="close">
+    <bean id="hikariDatasource" class="com.zaxxer.hikari.HikariDataSource" destroy-method="close">
         <constructor-arg ref="hikariConfig" />
     </bean>
+
+    <!-- FlexyPool -->
+    <bean id="configurationBuilder" class="com.vladmihalcea.flexypool.config.Configuration$Builder">
+        <constructor-arg value="uniqueId"/>
+        <constructor-arg ref="hikariDatasource"/>
+        <constructor-arg value="#{ T(com.vladmihalcea.flexypool.adaptor.HikariCPPoolAdapter).FACTORY }"/>
+    </bean>
+
+    <bean id="basedataSource" class="com.vladmihalcea.flexypool.FlexyPoolDataSource" init-method="start" destroy-method="stop">
+        <constructor-arg ref="configuration"/>
+        <constructor-arg>
+            <list>
+                <bean class="com.vladmihalcea.flexypool.strategy.IncrementPoolOnTimeoutConnectionAcquiringStrategy.Factory">
+                    <constructor-arg value="5"/>
+                </bean>
+                <bean class="com.vladmihalcea.flexypool.strategy.RetryConnectionAcquiringStrategy.Factory">
+                    <constructor-arg value="2"/>
+                </bean>
+            </list>
+        </constructor-arg>
+
+    </bean>
+
+    <bean id="configuration" factory-bean="configurationBuilder" factory-method="build"/>
 
     <bean id="dataSource" class="net.ttddyy.dsproxy.support.ProxyDataSource">
         <property name="dataSource" ref="basedataSource"/>
