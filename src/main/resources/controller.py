@@ -21,8 +21,8 @@ guild_toons_output = "data/guildtoons.json"
 # Get the list of all toons
 # mrrush --> This guys is a top arena player and has all the toons.
 top_player = "mrrush"
-toons = collection.toons(top_player)
 print "Collecting all toons..."
+toons = collection.toons(top_player)
 with open(toons_output, 'w+') as outfile:
     json.dump(toons, outfile)
 
@@ -42,9 +42,11 @@ with open(guild_members_output, 'w+') as outfile:
 print "Collecting toons from the guild..."
 
 guild_toons = []
+i=0
 for member in guild_members:
+    i = i + 1
     username = member['username']
-    print("Fetching data for " + username)
+    print("Fetching data for " + username + " (" + str(i) + "/" + str(len(guild_members)) + ")")
     gt = collection.toons(username, False)
     guild_toons.append({"username":username, "toons":gt})
 

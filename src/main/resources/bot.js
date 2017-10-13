@@ -28,6 +28,7 @@ function get_db_connection() {
 }
 
 toons = "";
+toons_list = [];
 var toons_con = get_db_connection();
 toons_con.connect(function(err) {
     if (err) {
@@ -41,6 +42,7 @@ toons_con.connect(function(err) {
 
         for (i in result) {
             var toon = result[i];
+            toons_list.push(toon['name']);
             toons = toons + toon['name'] + "\n";
         }
     });
@@ -77,9 +79,10 @@ bot.on('ready', function (evt) {
 });
 bot.on('message', function (user, userID, channelID, message, evt) {
     // Our bot needs to know if it will execute a command
-    // It will listen for messages that will start with `!`
-    if (message.substring(0, 1) == '!') {
-        var args = message.substring(1).split(' ');
+    // It will listen for messages that are addressed to it using @greeter
+    if (message.indexOf('@' + bot.id) > -1) {
+        message = message.trim().replace("<@" + bot.id + "> ", '');
+        var args = message.trim().split(' ');
         var cmd = args[0];
        
         args = args.splice(1);
@@ -138,8 +141,8 @@ bot.on('message', function (user, userID, channelID, message, evt) {
                 if (name.length == 0) {
                     bot.sendMessage({
                         to: channelID,
-                        message: 'Must supply a name. Usage: !guild-member Celessa Laike'
-                    });    
+                        message: 'Must supply a name. Usage: @greeter guild-member Celessa Laike'
+                    });
                 } else {
                     var con = get_db_connection();
                     con.connect(function(err) {
@@ -205,12 +208,39 @@ bot.on('message', function (user, userID, channelID, message, evt) {
                         }
                     }
                 }
-                if (name.length == 0) {
+
+				console.log(name);
+			   	name_found = 1;
+			   	closest_match = 0;
+               	if (name.length == 0) {
+               		name_found = 0;
                     bot.sendMessage({
                         to: channelID,
-                        message: 'Must supply a toon name. Usage: !member-toon Ewok Scout'
+                        message: 'Must supply a toon name. Usage: @greeter member-toon Ewok Scout'
                     });    
-                } else {
+                } else if (toons.indexOf(name) < 0) {
+					// Find the closest match
+					for (i in toons_list) {
+						var t = toons_list[i];
+						if (t.toLowerCase().indexOf(name.toLowerCase()) >= 0) {
+							console.log("Closest match to " + name + " is " + t);
+							name=t;
+							name_found = 1;
+							closest_match = 1;
+							break;
+						}
+					}
+
+					if (closest_match == 0) {
+						name_found == 0;
+						bot.sendMessage({
+							to: channelID,
+							message: 'No results found for ' + name + '. Check the supplied toon name. Use @greeter toons to get correct name'
+						});
+					}
+				}
+
+				if (name_found == 1) {
                     var con = get_db_connection();
                     con.connect(function(err) {
                       if (err) {
@@ -220,7 +250,6 @@ bot.on('message', function (user, userID, channelID, message, evt) {
                             message: 'Internal error. Try again after some time!'
                         });
                       } else {
-                            console.log(name);
                             con.query("select u.name, gt.star, gt.galacticPower from Users u INNER JOIN GuildToons gt ON u.id = gt.userId INNER JOIN Toons t ON gt.toonId = t.id AND t.name = ? ORDER BY gt.star DESC, gt.galacticPower DESC", [name], function (err, result, fields) {
                                 if (err) {
                                     console.log(err);
@@ -232,7 +261,7 @@ bot.on('message', function (user, userID, channelID, message, evt) {
                                     if (result.length == 0) {
                                         bot.sendMessage({
                                             to: channelID,
-                                            message: 'No results found for ' + name + '. Check the supplied toon name. Use !toons to get correct name'
+                                            message: 'Shame!! There is no player in the guild with ' + name + '.'
                                         });
                                     } else {
                                         output = "Member, star, GP\n-------------------\n"

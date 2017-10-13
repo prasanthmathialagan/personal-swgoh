@@ -18,9 +18,12 @@ def toons(username, lite=True):
     toons = soup.select(base)
     toons_list=[]
 
+    i=0
     for toon in toons:
+        i = i + 1;
+        print("Processing " + str(i) + "/" + str(len(toons)))
         toon_obj = {}
-        code = toon.find("a")['href'].split("/")[4]
+        code = toon.find("a")['href'].split("/")[5]
         toon_obj['code'] = code
         toon_obj['name'] = toon.find("a").find("img")['alt']
 
@@ -44,6 +47,7 @@ def toons(username, lite=True):
                     label = stat.find("span", class_="pc-stat-label").text
                     if label == "Speed":
                         toon_obj['speed'] = int(stat.find("span", class_="pc-stat-value").text)
+                        print (str(toon_obj['speed']))
 
                 # print ("Sleeping for 2 seconds to cool down...")
                 time.sleep(2)
@@ -53,3 +57,5 @@ def toons(username, lite=True):
         toons_list.append(toon_obj)
 
     return toons_list;
+
+# toons("grommet", False);
