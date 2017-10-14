@@ -16,7 +16,6 @@ var bot = new Discord.Client({
 });
 
 var mysql = require('mysql');
-
 function get_db_connection() {
     var con = mysql.createConnection({
       host: "localhost",
@@ -52,6 +51,7 @@ toons_con.connect(function(err) {
 
 var members_con = get_db_connection();
 members = "";
+members_list = [];
 members_con.connect(function(err) {
     if (err) {
         throw err;
@@ -65,6 +65,7 @@ members_con.connect(function(err) {
         members="UserID, name\n----------------\n";
         for (i in result) {
             var member = result[i];
+            members_list.push(member['name']);
             members = members + member['userId'] + ", " + member['name'] + "\n";
         }
     });
@@ -83,7 +84,7 @@ bot.on('message', function (user, userID, channelID, message, evt) {
     if (message.indexOf('@' + bot.id) > -1) {
         message = message.trim().replace("<@" + bot.id + "> ", '');
         var args = message.trim().split(' ');
-        var cmd = args[0];
+        var cmd = args[0].toLowerCase();
        
         args = args.splice(1);
         switch(cmd) {
@@ -232,10 +233,15 @@ bot.on('message', function (user, userID, channelID, message, evt) {
 					}
 
 					if (closest_match == 0) {
-						name_found == 0;
+						name_found = 0;
 						bot.sendMessage({
 							to: channelID,
 							message: 'No results found for ' + name + '. Check the supplied toon name. Use @greeter toons to get correct name'
+						});
+					} else {
+						bot.sendMessage({
+							to: channelID,
+							message: 'Closest match is ' + name + '.'
 						});
 					}
 				}
@@ -292,6 +298,11 @@ bot.on('message', function (user, userID, channelID, message, evt) {
                 }
             //
             break;
+            default:
+            	bot.sendMessage({
+					to: channelID,
+					message: '“You will find only what you bring in.” - Yoda'
+				});
             // Just add any case commands if you want to..
          }
      }
