@@ -203,6 +203,36 @@ public class Controller {
 					oldGuildToonData.setSpeed(newGuildToonData.getSpeed());
 				}
 
+				if (newGuildToonData.getPotency() != -1 && newGuildToonData.getPotency() != oldGuildToonData.getPotency()) {
+					updated = true;
+					oldGuildToonData.setPotency(newGuildToonData.getPotency());
+				}
+
+				if (newGuildToonData.getTenacity() != -1 && newGuildToonData.getTenacity() != oldGuildToonData.getTenacity()) {
+					updated = true;
+					oldGuildToonData.setTenacity(newGuildToonData.getTenacity());
+				}
+
+				if (newGuildToonData.getHealth() != -1 && newGuildToonData.getHealth() != oldGuildToonData.getHealth()) {
+					updated = true;
+					oldGuildToonData.setHealth(newGuildToonData.getHealth());
+				}
+
+				if (newGuildToonData.getProtection() != -1 && newGuildToonData.getProtection() != oldGuildToonData.getProtection()) {
+					updated = true;
+					oldGuildToonData.setProtection(newGuildToonData.getProtection());
+				}
+
+				if (newGuildToonData.getCriticalChance() != -1 && newGuildToonData.getCriticalChance() != oldGuildToonData.getCriticalChance()) {
+					updated = true;
+					oldGuildToonData.setCriticalChance(newGuildToonData.getCriticalChance());
+				}
+
+				if (newGuildToonData.getCriticalDamage() != -1 && newGuildToonData.getCriticalDamage() != oldGuildToonData.getCriticalDamage()) {
+					updated = true;
+					oldGuildToonData.setCriticalDamage(newGuildToonData.getCriticalDamage());
+				}
+
 				if (updated) {
 					updatedGuildToons.add(guildToon);
 				}
@@ -259,12 +289,24 @@ public class Controller {
 
 				int star = ((Long) toonObj.get("star")).intValue();
 				long gp = (long) toonObj.get("galacticPower");
-				int speed = ((Long) toonObj.getOrDefault("speed", -1L)).intValue();
+				int speed = ((Number) toonObj.getOrDefault("speed", -1L)).intValue();
+				int potency = ((Number) toonObj.getOrDefault("potency", -1L)).intValue();
+				int tenacity = ((Number) toonObj.getOrDefault("tenacity", -1L)).intValue();
+				int health = ((Number) toonObj.getOrDefault("health", -1L)).intValue();
+				int protection = ((Number) toonObj.getOrDefault("protection", -1L)).intValue();
+				int criticalChance = ((Number) toonObj.getOrDefault("criticalChance", -1L)).intValue();
+				int criticalDamage = ((Number) toonObj.getOrDefault("criticalDamage", -1L)).intValue();
 
 				GuildToonData toonData = new GuildToonData();
 				toonData.setStar(star);
 				toonData.setGalacticPower(gp);
 				toonData.setSpeed(speed);
+				toonData.setPotency(potency);
+				toonData.setTenacity(tenacity);
+				toonData.setHealth(health);
+				toonData.setProtection(protection);
+				toonData.setCriticalChance(criticalChance);
+				toonData.setCriticalDamage(criticalDamage);
 
 				guildToons.put(userId, toonId, toonData);
 			}

@@ -2,6 +2,7 @@ var Discord = require('discord.io');
 var logger = require('winston');
 var auth = require('./auth.json');
 var fs = require('fs')
+var asciitable = require('asciitable')
 
 // Configure logger settings
 logger.remove(logger.transports.Console);
@@ -138,6 +139,36 @@ function send_speed(member, toon, bot, channelID) {
 
 }
 
+// It is the responsibility of the caller to make sure the message sent in a batch_size does not exceed 2000 characters.
+function send_as_table (data, batch_size, bot, channelID) {
+	var options = {
+      skinny: true,
+      intersectionCharacter: "x"
+    };
+
+	var chunk=[]
+	for (var i=0; i < data.length; i++) {
+		chunk.push(data[i]);
+		if (chunk.length == batch_size) {
+			// Write the data
+			var table = asciitable(options, chunk);
+			chunk = [];
+			bot.sendMessage({
+				to: channelID,
+				message: "```" + table + "```"
+			});
+		}
+	}
+
+	if (chunk.length > 0) {
+		var table = asciitable(options, chunk);
+		bot.sendMessage({
+			to: channelID,
+			message: "```" + table + "```"
+		});
+	}
+}
+
 bot.on('ready', function (evt) {
     logger.info('Connected');
     logger.info('Logged in as: ');
@@ -265,25 +296,14 @@ bot.on('message', function (user, userID, channelID, message, evt) {
 											message: 'There is no player in the guild with the name ' + name + '.'
 										});
                                     } else {
-                                        output = "Toon, star, GP, Speed\n----------------------\n"
-                                        for (i in result) {
-                                            var o = result[i];
-                                            var toon = o['name'] + ", " + o['star'] + ", " + o['galacticPower'] + ", " + o['speed'] + "\n";
-                                            if ((toon.length + output.length) > 1990) {
-                                                bot.sendMessage ({
-                                                    to: channelID,
-                                                    message: output
-                                                })
-                                                output = "";
-                                            }
-                                            output = output + toon;
-                                        }
-                                        if (output.length > 0) {
-                                            bot.sendMessage ({
-                                                to: channelID,
-                                                message: output
-                                            })
-                                        }
+                                        data=[];
+										j=1;
+										for (i in result) {
+											var o = result[i];
+											data.push({No: j, Toon: o['name'], Star: o['star'], GP: o['galacticPower'], Speed: o['speed']});
+											j++;
+										}
+										send_as_table(data, 30, bot, channelID);
                                     }
                                 }
                             });
@@ -366,25 +386,14 @@ bot.on('message', function (user, userID, channelID, message, evt) {
                                             message: 'Shame!! There is no player in the guild with ' + name + '.'
                                         });
                                     } else {
-                                        output = "Member, star, GP\n-------------------\n"
-                                        for (i in result) {
-                                            var o = result[i];
-                                            var toon = o['name'] + ", " + o['star'] + ", " + o['galacticPower'] + "\n";
-                                            if ((toon.length + output.length) > 1990) {
-                                                bot.sendMessage ({
-                                                    to: channelID,
-                                                    message: output
-                                                })
-                                                output = "";
-                                            }
-                                            output = output + toon;
-                                        }
-                                        if (output.length > 0) {
-                                            bot.sendMessage ({
-                                                to: channelID,
-                                                message: output
-                                            })
-                                        }
+										data=[];
+										j=1;
+										for (i in result) {
+											var o = result[i];
+											data.push({No: j, Member: o['name'], Star: o['star'], GP: o['galacticPower']});
+											j++;
+										}
+										send_as_table(data, 20, bot, channelID);
                                     }
                                 }
                             });

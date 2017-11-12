@@ -67,6 +67,66 @@ public class GuildToon {
 
 		private int speed;
 
+		private int potency;
+
+		private int tenacity;
+
+		private int health;
+
+		private int protection;
+
+		private int criticalChance;
+
+		private int criticalDamage;
+
+		public int getPotency() {
+			return potency;
+		}
+
+		public void setPotency(int potency) {
+			this.potency = potency;
+		}
+
+		public int getTenacity() {
+			return tenacity;
+		}
+
+		public void setTenacity(int tenacity) {
+			this.tenacity = tenacity;
+		}
+
+		public int getHealth() {
+			return health;
+		}
+
+		public void setHealth(int health) {
+			this.health = health;
+		}
+
+		public int getProtection() {
+			return protection;
+		}
+
+		public void setProtection(int protection) {
+			this.protection = protection;
+		}
+
+		public int getCriticalChance() {
+			return criticalChance;
+		}
+
+		public void setCriticalChance(int criticalChance) {
+			this.criticalChance = criticalChance;
+		}
+
+		public int getCriticalDamage() {
+			return criticalDamage;
+		}
+
+		public void setCriticalDamage(int criticalDamage) {
+			this.criticalDamage = criticalDamage;
+		}
+
 		public long getGalacticPower() {
 			return galacticPower;
 		}
