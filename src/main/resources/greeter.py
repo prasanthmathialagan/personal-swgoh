@@ -194,4 +194,4 @@ def on_message(message):
         else:
             yield from send_as_table(players_with_toon, ['No', 'Member', 'Star', 'GP'], 30, message.channel)
 
-client.run('MzgxMzEwOTA3MTQzNDIxOTYz.DPFUfw.UDd9Nts8-YYjTPi16TQ5vUljULw')
+client.run('MzYwNTA3NTM5OTc4MzIxOTIw.DKWkWA.yx-yMLKqkEegLnthB3wYkNmvXS8')
