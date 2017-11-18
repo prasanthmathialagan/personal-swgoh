@@ -4,8 +4,8 @@ import time
 import math
 
 # switch on this flag to fetch speed information (very expensive)
-compute_speed=True
-speed_for_members=['starwarsgeek', 'frostdragon04', 'hollowgrey']
+compute_speed=False
+speed_for_members=['lithossturm', 'jkswgoh', 'killgorera']
 
 def toons(username, lite=True):
     global compute_speed, speed_for_members
