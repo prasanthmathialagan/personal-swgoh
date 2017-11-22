@@ -1,48 +1,86 @@
 import discord
 import asyncio
-import MySQLdb
 from terminaltables import AsciiTable
 import syslog
-import html_cache
+import web_pages_cache
+import json
+from bs4 import BeautifulSoup
+from operator import itemgetter
 
 html_cache_dir = "/media/pi/KINGSTON/html_cache"
 
-def get_db_connection():
-    return MySQLdb.connect(host="localhost", user="root", passwd="", db="swgoh")
+member_to_toons_dict = {}
+toon_to_members_dict = {}
 
 toons = ""
-toons_list= []
+toons_list = []
+toons_obj_list = None
+base_id_to_toon_name_dict = {}
 def populate_toons():
-    global toons, toons_list
+    global toons, toons_list, toons_obj_list, base_id_to_toon_name_dict, toon_to_members_dict
 
-    db = get_db_connection()
-    cur = db.cursor()
-    cur.execute("SELECT name FROM Toons")
-    for row in cur.fetchall():
-        toons_list.append(row[0])
-        toons = toons + row[0] + "\n"
-
-    cur.close()
+    toons_url = "https://swgoh.gg/api/characters/?format=json"
+    s = web_pages_cache.get_from_cache(html_cache_dir, "toons.json", toons_url)
+    toons_obj_list = json.loads(s)
+    for i in toons_obj_list:
+        n = i['name']
+        toons_list.append(n)
+        toons = toons + n + "\n"
+        base_id_to_toon_name_dict[i['base_id']] = n
+        toon_to_members_dict[n] = []
 
 populate_toons()
 
 members_table = None
 members_list = []
 def populate_members():
-    global members_table, members_list
+    global members_table, members_list, member_to_toons_dict
 
-    db = get_db_connection()
-    cur = db.cursor()
-    cur.execute("SELECT userId,name FROM Users ORDER by name")
+    members_url = "https://swgoh.gg/g/11097/swgoh-guild-raiders/"
+    s = web_pages_cache.get_from_cache(html_cache_dir, "guild_members.html", members_url)
+    soup = BeautifulSoup(s, 'html.parser')
+
+    base = "body > div.container.p-t-md > div.content-container > div.content-container-primary.character-list " \
+           "> ul > li.media.list-group-item.p-0.b-t-0 > div > table > tbody > tr > td > a"
+
+    members = soup.select(base)
     table_data = [['UserID', 'Name']]
-    for row in cur.fetchall():
-        members_list.append(row[1])
-        table_data.append([row[0], row[1]])
+    for m in members:
+        user_id = m['href'].split("/")[2]
+        name = m.find("strong").text
+        table_data.append([user_id, name])
+        members_list.append(name)
+        member_to_toons_dict[name] = []
 
     members_table = AsciiTable(table_data)
-    cur.close()
 
 populate_members()
+
+def populate_guild_data():
+    global base_id_to_toon_name_dict, member_to_toons_dict, toon_to_members_dict
+
+    guild_toons_url = "https://swgoh.gg/api/guilds/11097/units/"
+    s = web_pages_cache.get_from_cache(html_cache_dir, "guild_toons.dict", guild_toons_url)
+    dict = eval(s)
+    for key, values in dict.items():
+        name = base_id_to_toon_name_dict.get(key, None)
+        if name is None:
+            print("Skipping " + key)
+            continue
+
+        for value in values:
+            toon_to_members_dict[name].append({"gear_level": value['gear_level'], \
+                                                "power": value['power'], \
+                                                "level": value['level'], \
+                                                "rarity": value['rarity'], \
+                                                "player": value['player']})
+            member_to_toons_dict[value['player']].append({"gear_level": value['gear_level'], \
+                                               "power": value['power'], \
+                                               "level": value['level'], \
+                                               "rarity": value['rarity'], \
+                                               "toon": name})
+
+populate_guild_data()
 
 def strip_spaces_and_join(args):
     output = ""
@@ -62,43 +100,29 @@ def find_closest_match(name, list):
 
     return None
 
-# Returns None or List
 def toons_for_member(name):
-    sql = "SELECT @rn:=@rn+1 AS no, name, star, galacticPower, speed FROM " \
-          + "(SELECT t.name, gt.star, gt.galacticPower, if(gt.speed = 0, 'N/A', speed) as speed FROM Users u " \
-          + "INNER JOIN GuildToons gt ON u.id = gt.userId AND u.name='%s' " \
-          + "INNER JOIN Toons t ON gt.toonId = t.id ORDER BY gt.star DESC, gt.galacticPower DESC) t1, " \
-          + " (SELECT @rn:=0) t2"
-
-    db = get_db_connection()
-    cur = db.cursor()
-    cur.execute(sql % (name,))
-
     table_data=[]
-    for row in cur.fetchall():
-        table_data.append(list(row))
 
-    cur.close()
+    list = member_to_toons_dict[name]
+    list = sorted(list, key=itemgetter('power'), reverse=True)
+
+    i = 1
+    for elem in list:
+        table_data.append([i, elem['toon'], elem['rarity'], elem['gear_level'], elem['power']])
+        i = i + 1
 
     return table_data
 
 def fn_players_with_toon(name):
-    sql = "SELECT @rn:=@rn+1 AS no, name, star, galacticPower FROM " \
-          + "(SELECT u.name, gt.star, gt.galacticPower FROM Users u " \
-          + "INNER JOIN GuildToons gt ON u.id = gt.userId " \
-          + "INNER JOIN Toons t ON gt.toonId = t.id AND t.name = '%s' " \
-          + "ORDER BY gt.star DESC, gt.galacticPower DESC) t1, " \
-          + " (SELECT @rn:=0) t2"
-
-    db = get_db_connection()
-    cur = db.cursor()
-    cur.execute(sql % (name,))
-
     table_data=[]
-    for row in cur.fetchall():
-        table_data.append(list(row))
 
-    cur.close()
+    list = toon_to_members_dict[name]
+    list = sorted(list, key=itemgetter('power'), reverse=True)
+
+    i = 1
+    for elem in list:
+        table_data.append([i, elem['player'], elem['rarity'], elem['gear_level'], elem['power']])
+        i = i + 1
 
     return table_data
 
@@ -182,7 +206,7 @@ def on_message(message):
             yield from client.send_message(message.channel, 'Toons information is not available for ' + member_name + '.')
             return
         else:
-            yield from send_as_table(toons_for_player, ['No', 'Toon', 'Star', 'GP', 'Speed'], 30, message.channel)
+            yield from send_as_table(toons_for_player, ['No', 'Toon', 'Star', 'Gear', 'GP'], 30, message.channel)
     elif cmd == 'member-toon':
         toon_name = strip_spaces_and_join(words[1:])
         if len(toon_name) == 0:
@@ -201,7 +225,7 @@ def on_message(message):
             yield from client.send_message(message.channel, 'Shame!! There is no player in the guild with ' + toon_name + '.')
             return
         else:
-            yield from send_as_table(players_with_toon, ['No', 'Member', 'Star', 'GP'], 30, message.channel)
+            yield from send_as_table(players_with_toon, ['No', 'Member', 'Star', 'Gear', 'GP'], 30, message.channel)
     elif cmd == 'stats':
         member_name = find_closest_match(words[1].strip(), members_list)
         toon_name = find_closest_match(words[2].strip(), toons_list)
@@ -214,7 +238,7 @@ def on_message(message):
             # get the user id from user name
             # TODO
             url = "https://swgoh.gg/u/weldon/collection/finn"
-            html_cache.get_from_cache(html_cache_dir, "weldon_finn", url)
+            web_pages_cache.get_from_cache(html_cache_dir, "weldon_finn", url)
             yield from client.send_message(message.channel, 'It is a work in progress!!')
     elif cmd == 'challenges':
         yield from client.send_message(message.channel, ";challenges")
