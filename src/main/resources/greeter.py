@@ -2,6 +2,10 @@ import discord
 import asyncio
 import MySQLdb
 from terminaltables import AsciiTable
+import syslog
+import html_cache
+
+html_cache_dir = "/media/pi/KINGSTON/html_cache"
 
 def get_db_connection():
     return MySQLdb.connect(host="localhost", user="root", passwd="", db="swgoh")
@@ -119,10 +123,10 @@ client = discord.Client()
 @client.event
 @asyncio.coroutine
 def on_ready():
-    print('Logged in as')
-    print(client.user.name)
-    print(client.user.id)
-    print('------')
+    syslog.syslog('Logged in as')
+    syslog.syslog(client.user.name)
+    syslog.syslog(client.user.id)
+    syslog.syslog('------')
 
 @client.event
 @asyncio.coroutine
@@ -146,6 +150,11 @@ def on_message(message):
                 " **members** - Lists all the Guild members\n" \
                 " **guild-member <name>** - Lists the toons for the member\n" \
                 " **member-toon <toon name>** - Lists the members with the given toon\n"
+                # " **challenges** - Shows the daily guild challenges\n" \
+                # " **activities** - Shows the daily guild activities\n" \
+                # " **mods** - Shows some suggested mods for the specified character\n" \
+                # " **raidteams** - Shows some teams that work well for each raid.\n"
+
         yield from client.send_message(message.channel, output)
     elif cmd == 'ping':
         yield from client.send_message(message.channel, "Pong!")
@@ -193,5 +202,27 @@ def on_message(message):
             return
         else:
             yield from send_as_table(players_with_toon, ['No', 'Member', 'Star', 'GP'], 30, message.channel)
+    elif cmd == 'stats':
+        member_name = find_closest_match(words[1].strip(), members_list)
+        toon_name = find_closest_match(words[2].strip(), toons_list)
+
+        if member_name is None:
+            yield from client.send_message(message.channel, 'Member name ' + words[1] + ' is not valid')
+        elif toon_name is None:
+            yield from client.send_message(message.channel, 'Toon name ' + words[2] + ' is not valid')
+        else:
+            # get the user id from user name
+            # TODO
+            url = "https://swgoh.gg/u/weldon/collection/finn"
+            html_cache.get_from_cache(html_cache_dir, "weldon_finn", url)
+            yield from client.send_message(message.channel, 'It is a work in progress!!')
+    elif cmd == 'challenges':
+        yield from client.send_message(message.channel, ";challenges")
+    elif cmd == 'activities':
+        yield from client.send_message(message.channel, ";activities")
+    elif cmd == 'mods':
+        yield from client.send_message(message.channel, ";mods")
+    elif cmd == 'raidteams':
+        yield from client.send_message(message.channel, ";raidteams")
 
 client.run('MzYwNTA3NTM5OTc4MzIxOTIw.DKWkWA.yx-yMLKqkEegLnthB3wYkNmvXS8')
