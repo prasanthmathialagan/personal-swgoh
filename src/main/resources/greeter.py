@@ -56,6 +56,40 @@ def populate_members():
 
 populate_members()
 
+zetas_data = []
+def zetas():
+    zetas_url = "https://swgoh.gg/g/11097/swgoh-guild-raiders/zetas/"
+    s = web_pages_cache.get_from_cache(html_cache_dir, "zetas.html", zetas_url)
+    soup = BeautifulSoup(s, 'html.parser')
+
+    base = "body > div.container.p-t-md > div.content-container > div.content-container-primary.character-list " \
+           "> ul > li.media.list-group-item.p-0.b-t-0 > div > table > tbody > tr"
+
+    all_zetas = soup.select(base)
+    # every <tr> --> 1 player
+    for z in all_zetas:
+        zeta_details_for_member = z.findAll('td')
+        member_name = zeta_details_for_member[0].find("strong").text
+        zetas_for_member = zeta_details_for_member[2].findAll("div", class_="guild-member-zeta")
+        for zeta in zetas_for_member:
+            toon = zeta.find('div', class_='guild-member-zeta-character').find('img')['alt']
+            abilities = zeta.find('div', class_='guild-member-zeta-abilities').findAll('img')
+            for ability in abilities:
+                m_name = ""
+                t_name = ""
+
+                if member_name is not None:
+                    m_name = member_name
+                    member_name = None
+
+                if toon is not None:
+                    t_name = toon
+                    toon = None
+
+                zetas_data.append([m_name, t_name, ability['title']])
+
+zetas()
+
 def populate_guild_data():
     global base_id_to_toon_name_dict, member_to_toons_dict, toon_to_members_dict
 
@@ -172,8 +206,9 @@ def on_message(message):
                 " **hello** - Greets you\n" \
                 " **toons** - Lists all the toons\n" \
                 " **members** - Lists all the Guild members\n" \
+                " **zetas** - Lists all the zetas in the guild\n" \
                 " **guild-member <name>** - Lists the toons for the member\n" \
-                " **member-toon <toon name>** - Lists the members with the given toon\n"
+                " **member-toon <toon name>** - Lists the members with the given toon\n" \
                 # " **challenges** - Shows the daily guild challenges\n" \
                 # " **activities** - Shows the daily guild activities\n" \
                 # " **mods** - Shows some suggested mods for the specified character\n" \
@@ -188,6 +223,8 @@ def on_message(message):
         yield from client.send_message(message.channel, '```' + toons + '```')
     elif cmd == 'members':
         yield from client.send_message(message.channel, '```' + members_table.table + '```')
+    elif cmd == 'zetas':
+        yield from send_as_table(zetas_data, ['Member', 'Toon', 'Ability'], 20, message.channel)
     elif cmd == 'guild-member':
         member_name = strip_spaces_and_join(words[1:])
         if len(member_name) == 0:
